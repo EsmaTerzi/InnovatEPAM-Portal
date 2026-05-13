@@ -17,18 +17,18 @@
 
 **⚠️ BLOCKS ALL USER STORIES**
 
-- [ ] T001 Initialise Next.js project with TypeScript, App Router, Tailwind CSS v4 in `InnovatEPAM_Portal/` (`npx create-next-app`)
-- [ ] T002 Configure `tailwind.config.ts` with `@theme` block — define brand, neutral, and status color tokens (`submitted`, `under_review`, `accepted`, `rejected`)
-- [ ] T003 Install and configure `shadcn/ui` — run init, set `components.json`, install base components: Button, Input, Form, Select, Textarea, Badge, Card, Table, Dialog, Sheet, Skeleton
-- [ ] T004 [P] Install `better-sqlite3` + `@types/better-sqlite3`
-- [ ] T005 [P] Install `bcryptjs` + `@types/bcryptjs`
-- [ ] T006 [P] Install `uuid` + `@types/uuid`
-- [ ] T007 Create `lib/db/client.ts` — singleton `better-sqlite3` connection; enable WAL mode; export typed `db` instance
-- [ ] T008 Create `lib/db/schema.ts` — `CREATE TABLE IF NOT EXISTS` for all four tables (`users`, `ideas`, `evaluation_comments`, `sessions`) per the data model in plan.md; export `runMigrations()`
-- [ ] T009 Wire `runMigrations()` into Next.js startup via `instrumentation.ts` (Next.js instrumentation hook)
-- [ ] T010 Create `lib/db/seed.ts` — check for existing Admin row; if absent, read `SEED_ADMIN_EMAIL` + `SEED_ADMIN_PASSWORD` from env; hash password; insert Admin user; throw with clear message if env vars are missing
-- [ ] T011 Create `.env.example` with all required env var keys documented: `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`; add `.env.local` and `data/` and `uploads/` to `.gitignore`
-- [ ] T012 Create `lib/utils/format-date.ts` — `formatDate(isoString: string): string` using `Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })`
+- [x] T001 Initialise Next.js project with TypeScript, App Router, Tailwind CSS v4 in `InnovatEPAM_Portal/` (`npx create-next-app`)
+- [x] T002 Configure `tailwind.config.ts` with `@theme` block — define brand, neutral, and status color tokens (`submitted`, `under_review`, `accepted`, `rejected`)
+- [x] T003 Install and configure `shadcn/ui` — run init, set `components.json`, install base components: Button, Input, Form, Select, Textarea, Badge, Card, Table, Dialog, Sheet, Skeleton
+- [x] T004 [P] Install `better-sqlite3` + `@types/better-sqlite3`
+- [x] T005 [P] Install `bcryptjs` + `@types/bcryptjs`
+- [x] T006 [P] Install `uuid` + `@types/uuid`
+- [x] T007 Create `lib/db/client.ts` — singleton `better-sqlite3` connection; enable WAL mode; export typed `db` instance
+- [x] T008 Create `lib/db/schema.ts` — `CREATE TABLE IF NOT EXISTS` for all four tables (`users`, `ideas`, `evaluation_comments`, `sessions`) per the data model in plan.md; export `runMigrations()`
+- [x] T009 Wire `runMigrations()` into Next.js startup via `instrumentation.ts` (Next.js instrumentation hook)
+- [x] T010 Create `lib/db/seed.ts` — check for existing Admin row; if absent, read `SEED_ADMIN_EMAIL` + `SEED_ADMIN_PASSWORD` from env; hash password; insert Admin user; throw with clear message if env vars are missing
+- [x] T011 Create `.env.example` with all required env var keys documented: `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`; add `.env.local` and `data/` and `uploads/` to `.gitignore`
+- [x] T012 Create `lib/utils/format-date.ts` — `formatDate(isoString: string): string` using `Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })`
 
 **Checkpoint**: `npm run dev` starts without errors, `data/portal.db` is created, Admin seed row is present, Tailwind `@theme` tokens resolve in browser.
 
