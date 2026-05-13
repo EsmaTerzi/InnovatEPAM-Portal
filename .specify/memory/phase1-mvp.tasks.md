@@ -42,35 +42,35 @@
 
 ### Data Access Layer
 
-- [ ] T013 [P] [US1] Create `lib/db/dao/users.ts` — `createUser(email, passwordHash, role)`, `findUserByEmail(email)`, `findUserById(id)`; parameterised statements only
-- [ ] T014 [P] [US1] Create `lib/db/dao/sessions.ts` — `createSession(userId, expiresAt)`, `findSession(token)`, `deleteSession(token)`, `deleteExpiredSessions()`; parameterised statements only
+- [x] T013 [P] [US1] Create `lib/db/dao/users.ts` — `createUser(email, passwordHash, role)`, `findUserByEmail(email)`, `findUserById(id)`; parameterised statements only
+- [x] T014 [P] [US1] Create `lib/db/dao/sessions.ts` — `createSession(userId, expiresAt)`, `findSession(token)`, `deleteSession(token)`, `deleteExpiredSessions()`; parameterised statements only
 
 ### Auth Utilities
 
-- [ ] T015 [P] [US1] Create `lib/auth/password.ts` — `hashPassword(plain: string): Promise<string>` and `verifyPassword(plain: string, hash: string): Promise<boolean>` using `bcryptjs` (cost factor 12)
-- [ ] T016 [P] [US1] Create `lib/auth/session.ts` — `createSessionCookie(token)`, `clearSessionCookie()`, `getSessionUser(request): Promise<User | null>`; HTTP-only cookie, `Secure` in production, `maxAge` 86400 (24 h)
+- [x] T015 [P] [US1] Create `lib/auth/password.ts` — `hashPassword(plain: string): Promise<string>` and `verifyPassword(plain: string, hash: string): Promise<boolean>` using `bcryptjs` (cost factor 12)
+- [x] T016 [P] [US1] Create `lib/auth/session.ts` — `createSessionCookie(token)`, `clearSessionCookie()`, `getSessionUser(request): Promise<User | null>`; HTTP-only cookie, `Secure` in production, `maxAge` 86400 (24 h)
 
 ### API Routes
 
-- [ ] T017 [US1] Create `app/api/auth/register/route.ts` — validate email format + password ≥8 chars; call `findUserByEmail` and return 409 if taken; `hashPassword`; `createUser` with role `submitter`; `createSession`; set cookie; return 201
-- [ ] T018 [US1] Create `app/api/auth/login/route.ts` — `findUserByEmail`; `verifyPassword`; create session; set cookie; return 200; return generic 401 on any failure (no field hints)
-- [ ] T019 [US1] Create `app/api/auth/logout/route.ts` — `deleteSession` from cookie token; `clearSessionCookie`; return 200
-- [ ] T020 [US1] Create `app/api/me/route.ts` — `getSessionUser`; return `{ id, email, role }` or 401
+- [x] T017 [US1] Create `app/api/auth/register/route.ts`
+- [x] T018 [US1] Create `app/api/auth/login/route.ts`
+- [x] T019 [US1] Create `app/api/auth/logout/route.ts`
+- [x] T020 [US1] Create `app/api/me/route.ts`
 
 ### Route Protection
 
-- [ ] T021 [US1] Create `middleware.ts` — protect all `/(protected)/*` paths: redirect unauthenticated to `/login`; block Submitter role on `/admin/*` paths with 403 response
+- [x] T021 [US1] Create `middleware.ts`
 
 ### UI Components
 
-- [ ] T022 [P] [US1] Create `components/auth/RegisterForm.tsx` — shadcn Form + Input (email, password) + Button; client-side: required + email format + password ≥8 chars; POST `/api/auth/register`; show server errors inline; redirect to `/dashboard` on success
-- [ ] T023 [P] [US1] Create `components/auth/LoginForm.tsx` — same pattern; POST `/api/auth/login`; show generic error on 401; redirect to `/dashboard` on success
+- [x] T022 [P] [US1] Create `components/auth/RegisterForm.tsx`
+- [x] T023 [P] [US1] Create `components/auth/LoginForm.tsx`
 
 ### Pages & Layouts
 
-- [ ] T024 [P] [US1] Create `app/(auth)/register/page.tsx` — render RegisterForm; redirect authenticated users to `/dashboard`
-- [ ] T025 [P] [US1] Create `app/(auth)/login/page.tsx` — render LoginForm; redirect authenticated users to `/dashboard`
-- [ ] T026 [US1] Create `app/(protected)/layout.tsx` — server component; call `getSessionUser`; pass user via React context or props to children; render shared nav
+- [x] T024 [P] [US1] Create `app/(auth)/register/page.tsx`
+- [x] T025 [P] [US1] Create `app/(auth)/login/page.tsx`
+- [x] T026 [US1] Create `app/(protected)/layout.tsx`
 
 **Checkpoint**: Register → login → `/dashboard` (empty) → logout → `/login`. Accessing `/dashboard` unauthenticated redirects. Accessing `/admin/*` as Submitter returns 403.
 
