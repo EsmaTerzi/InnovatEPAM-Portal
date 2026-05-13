@@ -84,30 +84,30 @@
 
 ### File Upload
 
-- [ ] T027 [US2] Create `lib/uploads/handler.ts` — `validateAndSaveFile(file: File): Promise<string>`: check MIME type against allowlist (`application/pdf`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, `application/vnd.openxmlformats-officedocument.presentationml.presentation`, `image/png`, `image/jpeg`); enforce 10 MB limit; write to `/uploads/<uuid>-<sanitised-originalname>`; return relative path; throw descriptive error on validation failure
+- [x] T027 [US2] Create `lib/uploads/handler.ts` — `validateAndSaveFile(file: File): Promise<string>`: check MIME type against allowlist (`application/pdf`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document`, `application/vnd.openxmlformats-officedocument.presentationml.presentation`, `image/png`, `image/jpeg`); enforce 10 MB limit; write to `/uploads/<uuid>-<sanitised-originalname>`; return relative path; throw descriptive error on validation failure
 
 ### Data Access Layer
 
-- [ ] T028 [US2] Create `lib/db/dao/ideas.ts` — `createIdea(data)`, `findIdeasByUser(userId)`, `findIdeaById(id)`; parameterised statements only
+- [x] T028 [US2] Create `lib/db/dao/ideas.ts` — `createIdea(data)`, `findIdeasByUser(userId)`, `findIdeaById(id)`; parameterised statements only
 
 ### API Routes
 
-- [ ] T029 [US2] Create `app/api/ideas/route.ts` (POST) — authenticate via `getSessionUser`; parse `multipart/form-data`; validate title + description + category (must be in the four allowed values); call `validateAndSaveFile` if file present; `createIdea` with status `submitted`; return 201 with `{ id }`
-- [ ] T030 [US2] Create `app/api/ideas/[id]/route.ts` (GET) — authenticate; `findIdeaById`; if user role is `submitter`, enforce `idea.submitted_by === user.id` (return 403 otherwise); also fetch comment via `findCommentByIdeaId`; return idea + comment
+- [x] T029 [US2] Create `app/api/ideas/route.ts` (POST) — authenticate via `getSessionUser`; parse `multipart/form-data`; validate title + description + category (must be in the four allowed values); call `validateAndSaveFile` if file present; `createIdea` with status `submitted`; return 201 with `{ id }`
+- [x] T030 [US2] Create `app/api/ideas/[id]/route.ts` (GET) — authenticate; `findIdeaById`; if user role is `submitter`, enforce `idea.submitted_by === user.id` (return 403 otherwise); also fetch comment via `findCommentByIdeaId`; return idea + comment
 
 ### UI Components
 
-- [ ] T031 [P] [US2] Create `components/ideas/StatusBadge.tsx` — shadcn Badge; map status string to `@theme` color variant: `submitted`→brand-blue, `under_review`→amber, `accepted`→green, `rejected`→red; display human-readable label
-- [ ] T032 [P] [US2] Create `components/ideas/IdeaCard.tsx` — title, category, StatusBadge, `formatDate(created_at)`; wrapped in a link to `/ideas/[id]`
-- [ ] T033 [P] [US2] Create `components/ideas/IdeaList.tsx` — renders array of IdeaCards; empty state: "No ideas submitted yet. Submit your first idea."
-- [ ] T034 [US2] Create `components/ideas/IdeaSubmitForm.tsx` — shadcn Form; fields: title (Input, required), description (Textarea, required), category (Select with options: Process Improvement / Technology / Customer Experience / Other, required), attachment (file Input, optional, accept + size hint displayed); POST to `/api/ideas` as `multipart/form-data`; show inline validation errors; on success redirect to `/dashboard`
-- [ ] T035 [US2] Create `components/ideas/IdeaDetail.tsx` — read-only view: title, category, StatusBadge, description, formatted dates, attachment download link (if present), evaluation comment block (if present)
+- [x] T031 [P] [US2] Create `components/ideas/StatusBadge.tsx` — shadcn Badge; map status string to `@theme` color variant: `submitted`→brand-blue, `under_review`→amber, `accepted`→green, `rejected`→red; display human-readable label
+- [x] T032 [P] [US2] Create `components/ideas/IdeaCard.tsx` — title, category, StatusBadge, `formatDate(created_at)`; wrapped in a link to `/ideas/[id]`
+- [x] T033 [P] [US2] Create `components/ideas/IdeaList.tsx` — renders array of IdeaCards; empty state: "No ideas submitted yet. Submit your first idea."
+- [x] T034 [US2] Create `components/ideas/IdeaSubmitForm.tsx` — shadcn Form; fields: title (Input, required), description (Textarea, required), category (Select with options: Process Improvement / Technology / Customer Experience / Other, required), attachment (file Input, optional, accept + size hint displayed); POST to `/api/ideas` as `multipart/form-data`; show inline validation errors; on success redirect to `/dashboard`
+- [x] T035 [US2] Create `components/ideas/IdeaDetail.tsx` — read-only view: title, category, StatusBadge, description, formatted dates, attachment download link (if present), evaluation comment block (if present)
 
 ### Pages
 
-- [ ] T036 [US2] Create `app/(protected)/dashboard/page.tsx` — server component; fetch current user via `getSessionUser`; fetch `/api/ideas?user=me` (or direct DAO call); render IdeaList + "Submit New Idea" Button linking to `/ideas/new`
-- [ ] T037 [US2] Create `app/(protected)/ideas/new/page.tsx` — render IdeaSubmitForm
-- [ ] T038 [US2] Create `app/(protected)/ideas/[id]/page.tsx` — server component; fetch idea + comment; enforce ownership (redirect 403 if Submitter accessing another's idea); render IdeaDetail
+- [x] T036 [US2] Create `app/(protected)/dashboard/page.tsx` — server component; fetch current user via `getSessionUser`; fetch `/api/ideas?user=me` (or direct DAO call); render IdeaList + "Submit New Idea" Button linking to `/ideas/new`
+- [x] T037 [US2] Create `app/(protected)/ideas/new/page.tsx` — render IdeaSubmitForm
+- [x] T038 [US2] Create `app/(protected)/ideas/[id]/page.tsx` — server component; fetch idea + comment; enforce ownership (redirect 403 if Submitter accessing another's idea); render IdeaDetail
 
 **Checkpoint**: Login → submit idea (with and without file) → "My Ideas" shows correct list with StatusBadge → idea detail page renders. Accessing another user's idea URL returns 403.
 
