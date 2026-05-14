@@ -15,7 +15,6 @@ export interface Idea {
   description: string;
   category: IdeaCategory;
   status: IdeaStatus;
-  attachment_path: string | null;
   submitted_by: string;
   created_at: string;
   updated_at: string;
@@ -26,7 +25,6 @@ export interface CreateIdeaData {
   description: string;
   category: IdeaCategory;
   submitted_by: string;
-  attachment_path?: string | null;
 }
 
 export function createIdea(data: CreateIdeaData): Idea {
@@ -34,15 +32,14 @@ export function createIdea(data: CreateIdeaData): Idea {
   const id = uuidv4();
 
   db.prepare(
-    `INSERT INTO ideas (id, title, description, category, submitted_by, attachment_path)
-     VALUES (?, ?, ?, ?, ?, ?)`
+    `INSERT INTO ideas (id, title, description, category, submitted_by)
+     VALUES (?, ?, ?, ?, ?)`
   ).run(
     id,
     data.title,
     data.description,
     data.category,
     data.submitted_by,
-    data.attachment_path ?? null
   );
 
   return findIdeaById(id) as Idea;

@@ -3,9 +3,11 @@ import getDb from '@/lib/db/client';
 import { getSessionUser } from '@/lib/auth/session';
 import { createIdea, findIdeasByUser, type IdeaCategory } from '@/lib/db/dao/ideas';
 import { createMetadataEntries, findMetadataByIdeaId } from '@/lib/db/dao/metadata';
-import { validateCategoryFields } from '@/lib/utils/validation';
+import { createAttachments, findAttachmentsByIdeaId } from '@/lib/db/dao/attachments';
+import { validateCategoryFields, validateAttachments } from '@/lib/utils/validation';
 import { CATEGORY_CONFIG } from '@/lib/config/categories';
-import { validateAndSaveFile } from '@/lib/uploads/handler';
+import { MAX_ATTACHMENTS } from '@/lib/config/attachments';
+import { validateAndSaveAttachments } from '@/lib/uploads/handler';
 
 const ALLOWED_CATEGORIES: IdeaCategory[] = [
   'Process Improvement',
@@ -30,8 +32,25 @@ export async function POST(request: NextRequest) {
   const title = (formData.get('title') as string | null)?.trim() ?? '';
   const description = (formData.get('description') as string | null)?.trim() ?? '';
   const category = (formData.get('category') as string | null)?.trim() ?? '';
-  const file = formData.get('attachment') as File | null;
+  const files = formData.getAll('attachments') as File[];
   const metadataRaw = formData.get('metadata') as string | null;
+
+  // Enforce attachment count limit
+  if (files.length > MAX_ATTACHMENTS) {
+    return NextResponse.json(
+      { errors: { attachments: `You can attach a maximum of ${MAX_ATTACHMENTS} files.` } },
+      { status: 400 },
+    );
+  }
+
+  // Validate attachment types and sizes
+  const attachmentErrors = validateAttachments(files.filter((f) => f.size > 0));
+  if (attachmentErrors.length > 0) {
+    return NextResponse.json(
+      { errors: { attachments: attachmentErrors[0] } },
+      { status: 400 },
+    );
+  }
 
   // Parse metadata JSON if present
   let metadataInput: Record<string, string> = {};
@@ -72,7 +91,6 @@ export async function POST(request: NextRequest) {
     errors.category = 'Invalid category.';
   }
 
-  // Category-specific field validation
   const categoryErrors = validateCategoryFields(category, sanitisedMetadata);
   Object.assign(errors, categoryErrors);
 
@@ -80,19 +98,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ errors }, { status: 400 });
   }
 
-  let attachmentPath: string | null = null;
-  if (file && file.size > 0) {
+  // Save files to disk
+  const validFiles = files.filter((f) => f.size > 0);
+  let savedAttachments: Awaited<ReturnType<typeof validateAndSaveAttachments>> = [];
+  if (validFiles.length > 0) {
     try {
-      attachmentPath = await validateAndSaveFile(file);
+      savedAttachments = await validateAndSaveAttachments(validFiles);
     } catch (err) {
       return NextResponse.json(
-        { errors: { attachment: (err as Error).message } },
+        { errors: { attachments: (err as Error).message } },
         { status: 400 },
       );
     }
   }
 
-  // Insert idea + metadata in one transaction
+  // Insert idea + metadata + attachments in one transaction
   const db = getDb();
   const idea = db.transaction(() => {
     const created = createIdea({
@@ -100,14 +120,17 @@ export async function POST(request: NextRequest) {
       description,
       category: category as IdeaCategory,
       submitted_by: user.id,
-      attachment_path: attachmentPath,
     });
     createMetadataEntries(created.id, sanitisedMetadata, db);
+    if (savedAttachments.length > 0) {
+      createAttachments(created.id, savedAttachments);
+    }
     return created;
   })();
 
   const metadata = findMetadataByIdeaId(idea.id);
-  return NextResponse.json({ ...idea, metadata }, { status: 201 });
+  const attachments = findAttachmentsByIdeaId(idea.id);
+  return NextResponse.json({ ...idea, metadata, attachments }, { status: 201 });
 }
 
 export async function GET(request: NextRequest) {
@@ -119,4 +142,3 @@ export async function GET(request: NextRequest) {
   const ideas = findIdeasByUser(user.id);
   return NextResponse.json(ideas);
 }
-

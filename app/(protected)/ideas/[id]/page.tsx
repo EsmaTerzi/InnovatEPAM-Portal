@@ -4,6 +4,7 @@ import { getSessionUser } from '@/lib/auth/session';
 import { findIdeaById } from '@/lib/db/dao/ideas';
 import { findCommentByIdeaId } from '@/lib/db/dao/comments';
 import { findMetadataByIdeaId } from '@/lib/db/dao/metadata';
+import { findAttachmentsByIdeaId } from '@/lib/db/dao/attachments';
 import { IdeaDetail } from '@/components/ideas/IdeaDetail';
 
 export default async function IdeaDetailPage({
@@ -24,6 +25,7 @@ export default async function IdeaDetailPage({
 
   const comment = findCommentByIdeaId(id) ?? null;
   const metadata = findMetadataByIdeaId(id);
+  const attachments = findAttachmentsByIdeaId(id);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -34,7 +36,7 @@ export default async function IdeaDetailPage({
         ← Back to My Ideas
       </Link>
       <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
-        <IdeaDetail idea={idea} comment={comment} metadata={metadata} />
+        <IdeaDetail idea={idea} comment={comment} metadata={metadata} attachments={attachments} />
       </div>
     </div>
   );

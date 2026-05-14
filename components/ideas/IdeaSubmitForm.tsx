@@ -30,27 +30,18 @@ type BaseErrors = {
 export function IdeaSubmitForm() {
   const router = useRouter();
 
-  // ── Base fields ────────────────────────────────────────────────────────────
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // ── Category-specific metadata fields ──────────────────────────────────────
   const [metadataFields, setMetadataFields] = useState<Record<string, string>>({});
-
-  // ── Guidance banner dismissal (session-scoped) ─────────────────────────────
   const [dismissedCategories, setDismissedCategories] = useState<Set<string>>(new Set());
-
-  // ── Category-switch warning ────────────────────────────────────────────────
   const [pendingCategory, setPendingCategory] = useState<string | null>(null);
-
-  // ── Errors ─────────────────────────────────────────────────────────────────
   const [baseErrors, setBaseErrors] = useState<BaseErrors>({});
   const [metaErrors, setMetaErrors] = useState<Record<string, string>>({});
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
   function handleCategoryChange(newCategory: string) {
     const hasMetadataValues = Object.values(metadataFields).some((v) => v.trim() !== '');
     if (hasMetadataValues) {
@@ -235,20 +226,10 @@ export function IdeaSubmitForm() {
             category-specific answers. Continue?
           </p>
           <div className="flex gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => applyCategory(pendingCategory)}
-            >
+            <Button type="button" size="sm" variant="outline" onClick={() => applyCategory(pendingCategory)}>
               Continue
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={() => setPendingCategory(null)}
-            >
+            <Button type="button" size="sm" variant="ghost" onClick={() => setPendingCategory(null)}>
               Cancel
             </Button>
           </div>
@@ -259,9 +240,7 @@ export function IdeaSubmitForm() {
       {showGuidance && (
         <GuidanceBanner
           guidance={CATEGORY_CONFIG[category].guidance}
-          onDismiss={() =>
-            setDismissedCategories((prev) => new Set([...prev, category]))
-          }
+          onDismiss={() => setDismissedCategories((prev) => new Set([...prev, category]))}
         />
       )}
 
@@ -315,12 +294,7 @@ export function IdeaSubmitForm() {
         <Button type="submit" disabled={loading}>
           {loading ? 'Submitting…' : 'Submit Idea'}
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.back()}
-          disabled={loading}
-        >
+        <Button type="button" variant="outline" onClick={() => router.back()} disabled={loading}>
           Cancel
         </Button>
       </div>
