@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# InnovatEPAM Portal
 
-## Getting Started
+An internal innovation management portal where EPAM employees submit ideas and Admins evaluate them through a structured pipeline.
 
-First, run the development server:
+## Tech Stack
+
+- **Next.js 16** (App Router, TypeScript)
+- **Tailwind CSS v4** with `@theme` design tokens
+- **shadcn/ui** component library
+- **SQLite** via `better-sqlite3`
+- **bcryptjs** for password hashing
+
+## Prerequisites
+
+- Node.js ≥ 22
+- npm ≥ 9
+
+## Quickstart
 
 ```bash
+# 1. Install dependencies
+npm install
+
+# 2. Configure environment
+cp .env.example .env.local
+
+# 3. Start the development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The database is created automatically at `data/portal.db` on first run, and the Admin account is seeded from your `.env.local` values.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Default Admin Credentials
 
-## Learn More
+| Field    | Value               |
+|----------|---------------------|
+| Email    | `admin@example.com` |
+| Password | `changeme123`       |
 
-To learn more about Next.js, take a look at the following resources:
+> Change these in `.env.local` before deploying.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Environment Variables
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Variable             | Description                          |
+|----------------------|--------------------------------------|
+| `SEED_ADMIN_EMAIL`   | Email address for the seeded Admin   |
+| `SEED_ADMIN_PASSWORD`| Password for the seeded Admin        |
 
-## Deploy on Vercel
+## Project Structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+app/
+  (auth)/          # Public login & register pages
+  (protected)/     # Auth-guarded pages
+    dashboard/     # Submitter: My Ideas
+    ideas/         # Idea submission & detail
+    admin/         # Admin-only: All ideas + evaluation
+  api/             # API route handlers
+components/
+  auth/            # Auth forms, NavBar, UserContext
+  ideas/           # IdeaCard, IdeaList, IdeaDetail, StatusBadge, IdeaSubmitForm
+  admin/           # AdminIdeaTable, EvaluatePanel
+  errors/          # Forbidden, error boundaries
+lib/
+  db/              # SQLite client, schema, DAOs
+  auth/            # Password hashing, session management
+  uploads/         # File upload validation & storage
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Idea Status Pipeline
+
+```
+Submitted → Under Review → Accepted
+                        └→ Rejected
+```
+
+## File Uploads
+
+Attachments are stored in `/uploads/` (git-ignored). Allowed types: PDF, DOCX, PPTX, PNG, JPEG. Max size: 10 MB.

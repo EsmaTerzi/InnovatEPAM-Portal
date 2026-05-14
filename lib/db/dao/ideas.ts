@@ -62,6 +62,22 @@ export function findAllIdeas(): Idea[] {
     .all() as Idea[];
 }
 
+export interface IdeaWithEmail extends Idea {
+  submitter_email: string;
+}
+
+export function findAllIdeasWithEmail(): IdeaWithEmail[] {
+  const db = getDb();
+  return db
+    .prepare(
+      `SELECT i.*, u.email AS submitter_email
+       FROM ideas i
+       JOIN users u ON u.id = i.submitted_by
+       ORDER BY i.created_at DESC`
+    )
+    .all() as IdeaWithEmail[];
+}
+
 export function findIdeaById(id: string): Idea | undefined {
   const db = getDb();
   return db

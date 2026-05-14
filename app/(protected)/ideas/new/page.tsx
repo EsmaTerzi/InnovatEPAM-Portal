@@ -1,6 +1,10 @@
+import { redirect } from 'next/navigation';
+import { getSessionUser } from '@/lib/auth/session';
 import { IdeaSubmitForm } from '@/components/ideas/IdeaSubmitForm';
 
-export default function NewIdeaPage() {
+export default async function NewIdeaPage() {
+  const user = await getSessionUser();
+  if (user?.role === 'admin') redirect('/admin/dashboard');
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>

@@ -50,7 +50,7 @@ export function IdeaDetail({ idea, comment }: IdeaDetailProps) {
             Attachment
           </h2>
           <a
-            href={idea.attachment_path}
+            href={idea.attachment_path.replace('/uploads/', '/api/uploads/')}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:underline"

@@ -121,30 +121,30 @@
 
 ### Data Access Layer
 
-- [ ] T039 [P] [US3] Extend `lib/db/dao/ideas.ts` — add `findAllIdeas()` (all users, ordered by `created_at` desc) and `updateIdeaStatus(id, status)` (also updates `updated_at`)
-- [ ] T040 [P] [US3] Create `lib/db/dao/comments.ts` — `createComment(ideaId, adminId, commentText)`, `findCommentByIdeaId(ideaId)`
+- [x] T039 [P] [US3] Extend `lib/db/dao/ideas.ts` — add `findAllIdeas()` (all users, ordered by `created_at` desc) and `updateIdeaStatus(id, status)` (also updates `updated_at`)
+- [x] T040 [P] [US3] Create `lib/db/dao/comments.ts` — `createComment(ideaId, adminId, commentText)`, `findCommentByIdeaId(ideaId)`
 
 ### Status Transition Validation
 
-- [ ] T041 [US3] Create `lib/db/dao/transitions.ts` — `isLegalTransition(from: Status, to: Status): boolean` implementing the state machine: `submitted→under_review` ✅, `under_review→accepted` ✅, `under_review→rejected` ✅, all others ❌
+- [x] T041 [US3] Create `lib/db/dao/transitions.ts` — `isLegalTransition(from: Status, to: Status): boolean` implementing the state machine: `submitted→under_review` ✅, `under_review→accepted` ✅, `under_review→rejected` ✅, all others ❌
 
 ### API Route
 
-- [ ] T042 [US3] Create `app/api/ideas/[id]/evaluate/route.ts` (PATCH) — authenticate + assert `user.role === 'admin'` (return 403 otherwise); parse `{ status, comment? }`; `isLegalTransition(current, new)` — return 400 with message if illegal; `updateIdeaStatus`; if status is `accepted` or `rejected` and comment provided, `createComment` (DB UNIQUE constraint on `idea_id` enforces one-shot); return 200
+- [x] T042 [US3] Create `app/api/ideas/[id]/evaluate/route.ts` (PATCH) — authenticate + assert `user.role === 'admin'` (return 403 otherwise); parse `{ status, comment? }`; `isLegalTransition(current, new)` — return 400 with message if illegal; `updateIdeaStatus`; if status is `accepted` or `rejected` and comment provided, `createComment` (DB UNIQUE constraint on `idea_id` enforces one-shot); return 200
 
 ### Admin Route Guard
 
-- [ ] T043 [US3] Create `app/(protected)/admin/layout.tsx` — server component; assert `user.role === 'admin'`; render custom 403 component for Submitters
+- [x] T043 [US3] Create `app/(protected)/admin/layout.tsx` — server component; assert `user.role === 'admin'`; render custom 403 component for Submitters
 
 ### UI Components
 
-- [ ] T044 [US3] Create `components/admin/AdminIdeaTable.tsx` — shadcn Table; columns: Title (link to admin idea detail), Submitter email, Category, Status (StatusBadge), Submitted date (`formatDate`); sortable by status
-- [ ] T045 [US3] Create `components/admin/EvaluatePanel.tsx` — shows current StatusBadge; renders only legal transition buttons based on current status: `submitted` → "Move to Under Review" button; `under_review` → "Accept" + "Reject" buttons each with optional Textarea for comment; terminal statuses (`accepted`/`rejected`) show locked state with no controls; on action → PATCH `/api/ideas/[id]/evaluate`; show success confirmation
+- [x] T044 [US3] Create `components/admin/AdminIdeaTable.tsx` — shadcn Table; columns: Title (link to admin idea detail), Submitter email, Category, Status (StatusBadge), Submitted date (`formatDate`); sortable by status
+- [x] T045 [US3] Create `components/admin/EvaluatePanel.tsx` — shows current StatusBadge; renders only legal transition buttons based on current status: `submitted` → "Move to Under Review" button; `under_review` → "Accept" + "Reject" buttons each with optional Textarea for comment; terminal statuses (`accepted`/`rejected`) show locked state with no controls; on action → PATCH `/api/ideas/[id]/evaluate`; show success confirmation
 
 ### Pages
 
-- [ ] T046 [US3] Create `app/(protected)/admin/dashboard/page.tsx` — server component; fetch all ideas via `findAllIdeas`; render AdminIdeaTable
-- [ ] T047 [US3] Create `app/(protected)/admin/ideas/[id]/page.tsx` — server component; fetch idea + comment; render IdeaDetail (read-only) + EvaluatePanel side-by-side
+- [x] T046 [US3] Create `app/(protected)/admin/dashboard/page.tsx` — server component; fetch all ideas via `findAllIdeas`; render AdminIdeaTable
+- [x] T047 [US3] Create `app/(protected)/admin/ideas/[id]/page.tsx` — server component; fetch idea + comment; render IdeaDetail (read-only) + EvaluatePanel side-by-side
 
 **Checkpoint**: Admin can progress any idea through all legal transitions. Submitter's idea detail page shows evaluation comment. Illegal transitions (e.g. Submitted → Accepted directly) are rejected with 400. Submitter cannot reach `/admin/*`.
 
@@ -154,14 +154,14 @@
 
 **Purpose**: Production-ready shell, error/loading states, env validation, documentation.
 
-- [ ] T048 Create global responsive nav bar — logo, logged-in user email, Logout button; mobile: shadcn Sheet for hamburger menu; added to `app/(protected)/layout.tsx`
-- [ ] T049 [P] Create `app/not-found.tsx` — branded 404 page with "Go to Dashboard" link
-- [ ] T050 [P] Create shared 403 component `components/errors/Forbidden.tsx` — used in admin layout and API responses
-- [ ] T051 [P] Add loading skeletons (shadcn Skeleton) to `dashboard/page.tsx` and `admin/dashboard/page.tsx` for async data states
-- [ ] T052 Add error boundary handling to idea submission and evaluation API calls — display inline error toasts/messages, no full-page crashes
-- [ ] T053 Add startup env validation to `instrumentation.ts` — assert `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` are non-empty strings; throw with actionable message if missing
-- [ ] T054 Add `uploads/`, `data/portal.db`, `.env.local` to `.gitignore` (verify not already tracked)
-- [ ] T055 Write `README.md` — quickstart: prerequisites, `npm install`, copy `.env.example` to `.env.local`, `npm run dev`, open browser, seed Admin credentials
+- [x] T048 Create global responsive nav bar — logo, logged-in user email, Logout button; mobile: shadcn Sheet for hamburger menu; added to `app/(protected)/layout.tsx`
+- [x] T049 [P] Create `app/not-found.tsx` — branded 404 page with "Go to Dashboard" link
+- [x] T050 [P] Create shared 403 component `components/errors/Forbidden.tsx` — used in admin layout and API responses
+- [x] T051 [P] Add loading skeletons (shadcn Skeleton) to `dashboard/page.tsx` and `admin/dashboard/page.tsx` for async data states
+- [x] T052 Add error boundary handling to idea submission and evaluation API calls — display inline error toasts/messages, no full-page crashes
+- [x] T053 Add startup env validation to `instrumentation.ts` — assert `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` are non-empty strings; throw with actionable message if missing
+- [x] T054 Add `uploads/`, `data/portal.db`, `.env.local` to `.gitignore` (verify not already tracked)
+- [x] T055 Write `README.md` — quickstart: prerequisites, `npm install`, copy `.env.example` to `.env.local`, `npm run dev`, open browser, seed Admin credentials
 
 ---
 
