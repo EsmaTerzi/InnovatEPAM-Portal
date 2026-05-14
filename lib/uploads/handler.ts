@@ -1,16 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-
-const ALLOWED_MIME_TYPES = new Set([
-  'application/pdf',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'image/png',
-  'image/jpeg',
-]);
-
-const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+import { ATTACHMENT_CONFIG } from '@/lib/config/attachments';
+import type { AttachmentInsert } from '@/lib/db/dao/attachments';
 
 function sanitiseFilename(name: string): string {
   return name
@@ -19,15 +11,22 @@ function sanitiseFilename(name: string): string {
     .slice(0, 100);
 }
 
-export async function validateAndSaveFile(file: File): Promise<string> {
-  if (!ALLOWED_MIME_TYPES.has(file.type)) {
-    throw new Error(
-      `File type "${file.type}" is not allowed. Allowed types: PDF, DOCX, PPTX, PNG, JPEG.`
-    );
+function resolveTypeConfig(mimeType: string) {
+  return ATTACHMENT_CONFIG.find((c) => c.mimeTypes.includes(mimeType)) ?? null;
+}
+
+export async function validateAndSaveAttachment(file: File): Promise<AttachmentInsert> {
+  const typeConfig = resolveTypeConfig(file.type);
+
+  if (!typeConfig) {
+    throw new Error(`"${file.name}" has an unsupported file type.`);
   }
 
-  if (file.size > MAX_SIZE_BYTES) {
-    throw new Error(`File size exceeds the 10 MB limit.`);
+  if (file.size > typeConfig.maxSizeBytes) {
+    const limitMb = typeConfig.maxSizeBytes / (1024 * 1024);
+    throw new Error(
+      `"${file.name}" exceeds the ${limitMb} MB limit for ${typeConfig.label} files.`,
+    );
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -42,5 +41,18 @@ export async function validateAndSaveFile(file: File): Promise<string> {
   const filePath = path.join(uploadsDir, safeName);
   fs.writeFileSync(filePath, buffer);
 
-  return `/uploads/${safeName}`;
+  return {
+    original_name: sanitiseFilename(file.name),
+    stored_path: `/uploads/${safeName}`,
+    mime_type: file.type,
+    size_bytes: file.size,
+  };
+}
+
+export async function validateAndSaveAttachments(files: File[]): Promise<AttachmentInsert[]> {
+  const results: AttachmentInsert[] = [];
+  for (const file of files) {
+    results.push(await validateAndSaveAttachment(file));
+  }
+  return results;
 }

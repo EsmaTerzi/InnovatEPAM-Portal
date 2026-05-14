@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { findIdeaById } from '@/lib/db/dao/ideas';
 import { findCommentByIdeaId } from '@/lib/db/dao/comments';
 import { findMetadataByIdeaId } from '@/lib/db/dao/metadata';
+import { findAttachmentsByIdeaId } from '@/lib/db/dao/attachments';
 import { IdeaDetail } from '@/components/ideas/IdeaDetail';
 import { EvaluatePanel } from '@/components/admin/EvaluatePanel';
 
@@ -17,6 +18,7 @@ export default async function AdminIdeaDetailPage({
 
   const comment = findCommentByIdeaId(id) ?? null;
   const metadata = findMetadataByIdeaId(id);
+  const attachments = findAttachmentsByIdeaId(id);
 
   return (
     <div className="space-y-4">
@@ -29,7 +31,7 @@ export default async function AdminIdeaDetailPage({
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
-          <IdeaDetail idea={idea} comment={comment} metadata={metadata} />
+          <IdeaDetail idea={idea} comment={comment} metadata={metadata} attachments={attachments} />
         </div>
         <div>
           <EvaluatePanel ideaId={idea.id} currentStatus={idea.status} />

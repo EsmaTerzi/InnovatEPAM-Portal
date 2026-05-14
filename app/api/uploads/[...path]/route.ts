@@ -26,6 +26,9 @@ const MIME_MAP: Record<string, string> = {
   '.png':  'image/png',
   '.jpg':  'image/jpeg',
   '.jpeg': 'image/jpeg',
+  '.mp4':  'video/mp4',
+  '.webm': 'video/webm',
+  '.mov':  'video/quicktime',
 };
 
 export async function GET(
@@ -51,13 +54,47 @@ export async function GET(
 
   const ext = path.extname(filePath).toLowerCase();
   const contentType = MIME_MAP[ext] ?? 'application/octet-stream';
-  const fileBuffer = fs.readFileSync(filePath);
   const filename = path.basename(filePath);
+  const fileSize = fs.statSync(filePath).size;
+  const rangeHeader = request.headers.get('range');
+
+  // Support HTTP range requests — required for video seeking in <video controls>
+  if (rangeHeader && contentType.startsWith('video/')) {
+    const [, rangeValue] = rangeHeader.split('=');
+    const [startStr, endStr] = rangeValue.split('-');
+    const start = parseInt(startStr, 10);
+    const end = endStr ? parseInt(endStr, 10) : fileSize - 1;
+    const chunkSize = end - start + 1;
+
+    const nodeStream = fs.createReadStream(filePath, { start, end });
+    const webStream = new ReadableStream({
+      start(controller) {
+        nodeStream.on('data', (chunk) => controller.enqueue(chunk));
+        nodeStream.on('end', () => controller.close());
+        nodeStream.on('error', (err) => controller.error(err));
+      },
+    });
+
+    return new NextResponse(webStream, {
+      status: 206,
+      headers: {
+        'Content-Type': contentType,
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': String(chunkSize),
+        'Content-Disposition': `inline; filename="${filename}"`,
+      },
+    });
+  }
+
+  const fileBuffer = fs.readFileSync(filePath);
 
   return new NextResponse(fileBuffer, {
     headers: {
       'Content-Type': contentType,
       'Content-Disposition': `inline; filename="${filename}"`,
+      'Content-Length': String(fileSize),
+      'Accept-Ranges': 'bytes',
       'Cache-Control': 'private, max-age=3600',
     },
   });

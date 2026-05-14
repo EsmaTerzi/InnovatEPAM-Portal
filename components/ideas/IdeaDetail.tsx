@@ -1,17 +1,20 @@
 import { StatusBadge } from './StatusBadge';
 import { CategoryDetails } from './CategoryDetails';
+import { AttachmentPreview } from './AttachmentPreview';
 import { formatDate } from '@/lib/utils/format-date';
 import type { Idea } from '@/lib/db/dao/ideas';
 import type { EvaluationComment } from '@/lib/db/dao/comments';
 import type { MetadataEntry } from '@/lib/db/dao/metadata';
+import type { AttachmentResponse } from '@/lib/db/dao/attachments';
 
 interface IdeaDetailProps {
   idea: Idea;
   comment: EvaluationComment | null;
   metadata?: MetadataEntry[];
+  attachments?: AttachmentResponse[];
 }
 
-export function IdeaDetail({ idea, comment, metadata = [] }: IdeaDetailProps) {
+export function IdeaDetail({ idea, comment, metadata = [], attachments = [] }: IdeaDetailProps) {
   return (
     <article className="space-y-6">
       {/* Header */}
@@ -51,20 +54,13 @@ export function IdeaDetail({ idea, comment, metadata = [] }: IdeaDetailProps) {
         <CategoryDetails category={idea.category} metadata={metadata} />
       )}
 
-      {/* Attachment */}
-      {idea.attachment_path && (
+      {/* Attachments */}
+      {attachments.length > 0 && (
         <section>
           <h2 className="mb-2 text-sm font-semibold text-neutral-700 uppercase tracking-wide">
-            Attachment
+            Attachments
           </h2>
-          <a
-            href={idea.attachment_path.replace('/uploads/', '/api/uploads/')}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:underline"
-          >
-            Download file
-          </a>
+          <AttachmentPreview mode="readonly" attachments={attachments} />
         </section>
       )}
 

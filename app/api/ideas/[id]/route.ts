@@ -3,6 +3,7 @@ import { getSessionUser } from '@/lib/auth/session';
 import { findIdeaById } from '@/lib/db/dao/ideas';
 import { findCommentByIdeaId } from '@/lib/db/dao/comments';
 import { findMetadataByIdeaId } from '@/lib/db/dao/metadata';
+import { findAttachmentsByIdeaId } from '@/lib/db/dao/attachments';
 
 export async function GET(
   request: NextRequest,
@@ -26,5 +27,7 @@ export async function GET(
 
   const comment = findCommentByIdeaId(id);
   const metadata = findMetadataByIdeaId(id);
-  return NextResponse.json({ ...idea, comment: comment ?? null, metadata });
+  const attachments = findAttachmentsByIdeaId(id);
+  return NextResponse.json({ ...idea, comment: comment ?? null, metadata, attachments });
 }
+

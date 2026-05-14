@@ -13,9 +13,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { CATEGORY_CONFIG } from '@/lib/config/categories';
-import { validateCategoryFields } from '@/lib/utils/validation';
+import { validateCategoryFields, validateAttachments } from '@/lib/utils/validation';
 import { CategoryFieldsRenderer } from './CategoryFieldsRenderer';
 import { GuidanceBanner } from './GuidanceBanner';
+import { AttachmentUploadZone } from './AttachmentUploadZone';
+import { AttachmentPreview } from './AttachmentPreview';
 
 const CATEGORIES = Object.keys(CATEGORY_CONFIG) as string[];
 
@@ -23,34 +25,26 @@ type BaseErrors = {
   title?: string;
   description?: string;
   category?: string;
-  attachment?: string;
+  attachments?: string;
   server?: string;
 };
 
 export function IdeaSubmitForm() {
   const router = useRouter();
 
-  // ── Base fields ────────────────────────────────────────────────────────────
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
-  const [file, setFile] = useState<File | null>(null);
+  const [stagedFiles, setStagedFiles] = useState<File[]>([]);
+  const [attachmentErrors, setAttachmentErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // ── Category-specific metadata fields ──────────────────────────────────────
   const [metadataFields, setMetadataFields] = useState<Record<string, string>>({});
-
-  // ── Guidance banner dismissal (session-scoped) ─────────────────────────────
   const [dismissedCategories, setDismissedCategories] = useState<Set<string>>(new Set());
-
-  // ── Category-switch warning ────────────────────────────────────────────────
   const [pendingCategory, setPendingCategory] = useState<string | null>(null);
-
-  // ── Errors ─────────────────────────────────────────────────────────────────
   const [baseErrors, setBaseErrors] = useState<BaseErrors>({});
   const [metaErrors, setMetaErrors] = useState<Record<string, string>>({});
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
   function handleCategoryChange(newCategory: string) {
     const hasMetadataValues = Object.values(metadataFields).some((v) => v.trim() !== '');
     if (hasMetadataValues) {
@@ -78,12 +72,23 @@ export function IdeaSubmitForm() {
     }
   }
 
+  function handleFilesChange(files: File[]) {
+    setStagedFiles(files);
+    setAttachmentErrors(validateAttachments(files));
+  }
+
+  function handleRemoveFile(index: number) {
+    const next = stagedFiles.filter((_, i) => i !== index);
+    setStagedFiles(next);
+    setAttachmentErrors(validateAttachments(next));
+  }
+
   function validateBase(): boolean {
     const next: BaseErrors = {};
     if (!title.trim()) next.title = 'Title is required';
     if (!description.trim()) next.description = 'Description is required';
     if (!category) next.category = 'Please select a category';
-    if (file && file.size > 10 * 1024 * 1024) next.attachment = 'File must be under 10 MB';
+    if (attachmentErrors.length > 0) next.attachments = attachmentErrors[0];
     setBaseErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -117,7 +122,9 @@ export function IdeaSubmitForm() {
     formData.append('title', title.trim());
     formData.append('description', description.trim());
     formData.append('category', category);
-    if (file) formData.append('attachment', file);
+    for (const file of stagedFiles) {
+      formData.append('attachments', file);
+    }
     if (Object.keys(metadataFields).length > 0) {
       formData.append('metadata', JSON.stringify(metadataFields));
     }
@@ -133,9 +140,9 @@ export function IdeaSubmitForm() {
 
       const data = await res.json();
       if (data.errors) {
-        const { title: t, description: d, category: c, attachment: a, server: s, ...rest } =
+        const { title: t, description: d, category: c, attachments: a, server: s, ...rest } =
           data.errors as Record<string, string>;
-        setBaseErrors({ title: t, description: d, category: c, attachment: a, server: s });
+        setBaseErrors({ title: t, description: d, category: c, attachments: a, server: s });
         setMetaErrors(rest);
         scrollToFirstError();
       } else {
@@ -235,20 +242,10 @@ export function IdeaSubmitForm() {
             category-specific answers. Continue?
           </p>
           <div className="flex gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => applyCategory(pendingCategory)}
-            >
+            <Button type="button" size="sm" variant="outline" onClick={() => applyCategory(pendingCategory)}>
               Continue
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={() => setPendingCategory(null)}
-            >
+            <Button type="button" size="sm" variant="ghost" onClick={() => setPendingCategory(null)}>
               Cancel
             </Button>
           </div>
@@ -259,9 +256,7 @@ export function IdeaSubmitForm() {
       {showGuidance && (
         <GuidanceBanner
           guidance={CATEGORY_CONFIG[category].guidance}
-          onDismiss={() =>
-            setDismissedCategories((prev) => new Set([...prev, category]))
-          }
+          onDismiss={() => setDismissedCategories((prev) => new Set([...prev, category]))}
         />
       )}
 
@@ -276,25 +271,27 @@ export function IdeaSubmitForm() {
         />
       )}
 
-      {/* Attachment */}
-      <div className="space-y-1">
-        <label htmlFor="attachment" className="block text-sm font-medium text-neutral-700">
-          Attachment <span className="text-neutral-400 font-normal">(optional)</span>
+      {/* Attachments */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-neutral-700">
+          Attachments <span className="text-neutral-400 font-normal">(optional, max 3)</span>
         </label>
-        <Input
-          id="attachment"
-          type="file"
-          accept=".pdf,.docx,.pptx,.png,.jpg,.jpeg"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          aria-describedby="attachment-hint"
+        <AttachmentUploadZone
+          files={stagedFiles}
+          onFilesChange={handleFilesChange}
           disabled={loading}
         />
-        <p id="attachment-hint" className="text-xs text-neutral-400">
-          PDF, DOCX, PPTX, PNG or JPEG · Max 10 MB
-        </p>
-        {baseErrors.attachment && (
+        {stagedFiles.length > 0 && (
+          <AttachmentPreview
+            mode="edit"
+            files={stagedFiles}
+            onRemove={handleRemoveFile}
+            errors={attachmentErrors}
+          />
+        )}
+        {baseErrors.attachments && (
           <p className="text-sm text-red-600" role="alert">
-            {baseErrors.attachment}
+            {baseErrors.attachments}
           </p>
         )}
       </div>
@@ -315,12 +312,7 @@ export function IdeaSubmitForm() {
         <Button type="submit" disabled={loading}>
           {loading ? 'Submitting…' : 'Submit Idea'}
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.back()}
-          disabled={loading}
-        >
+        <Button type="button" variant="outline" onClick={() => router.back()} disabled={loading}>
           Cancel
         </Button>
       </div>

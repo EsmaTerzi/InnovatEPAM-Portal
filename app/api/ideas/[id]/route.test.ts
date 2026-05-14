@@ -16,10 +16,18 @@ const mockIdea = {
   description: 'Desc',
   category: 'Technology',
   status: 'submitted',
-  attachment_path: null,
   submitted_by: 'user-1',
   created_at: '2026-01-01T00:00:00.000Z',
   updated_at: '2026-01-01T00:00:00.000Z',
+};
+
+const mockAttachment = {
+  id: 'att-1',
+  original_name: 'brief.pdf',
+  stored_path: '/uploads/abc-brief.pdf',
+  mime_type: 'application/pdf',
+  size_bytes: 1024,
+  created_at: '2026-01-01T00:00:00.000Z',
 };
 
 jest.mock('@/lib/auth/session', () => ({
@@ -38,10 +46,15 @@ jest.mock('@/lib/db/dao/metadata', () => ({
   findMetadataByIdeaId: jest.fn(),
 }));
 
+jest.mock('@/lib/db/dao/attachments', () => ({
+  findAttachmentsByIdeaId: jest.fn(),
+}));
+
 import { getSessionUser } from '@/lib/auth/session';
 import { findIdeaById } from '@/lib/db/dao/ideas';
 import { findCommentByIdeaId } from '@/lib/db/dao/comments';
 import { findMetadataByIdeaId } from '@/lib/db/dao/metadata';
+import { findAttachmentsByIdeaId } from '@/lib/db/dao/attachments';
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 
@@ -59,6 +72,8 @@ describe('GET /api/ideas/[id]', () => {
     (getSessionUser as jest.Mock).mockResolvedValue(mockUser);
     (findIdeaById as jest.Mock).mockReturnValue(mockIdea);
     (findCommentByIdeaId as jest.Mock).mockReturnValue(null);
+    (findMetadataByIdeaId as jest.Mock).mockReturnValue([]);
+    (findAttachmentsByIdeaId as jest.Mock).mockReturnValue([]);
   });
 
   it('returns 401 when not authenticated', async () => {
@@ -70,7 +85,6 @@ describe('GET /api/ideas/[id]', () => {
 
   it('returns 404 when idea does not exist', async () => {
     (findIdeaById as jest.Mock).mockReturnValue(null);
-    (findMetadataByIdeaId as jest.Mock).mockReturnValue([]);
     const [req, ctx] = makeRequest('nonexistent');
     const res = await GET(req, ctx);
     expect(res.status).toBe(404);
@@ -91,8 +105,6 @@ describe('GET /api/ideas/[id]', () => {
   });
 
   it('returns metadata: [] for a legacy idea (no rows in idea_metadata)', async () => {
-    (findMetadataByIdeaId as jest.Mock).mockReturnValue([]);
-
     const [req, ctx] = makeRequest('idea-1');
     const res = await GET(req, ctx);
     expect(res.status).toBe(200);
@@ -102,7 +114,6 @@ describe('GET /api/ideas/[id]', () => {
 
   it('returns 403 when submitter tries to access another user\'s idea', async () => {
     (findIdeaById as jest.Mock).mockReturnValue({ ...mockIdea, submitted_by: 'other-user' });
-    (findMetadataByIdeaId as jest.Mock).mockReturnValue([]);
     const [req, ctx] = makeRequest('idea-1');
     const res = await GET(req, ctx);
     expect(res.status).toBe(403);
@@ -111,12 +122,44 @@ describe('GET /api/ideas/[id]', () => {
   it('includes the idea fields and comment in the response', async () => {
     const comment = { id: 'c1', comment_text: 'Good idea', created_at: '2026-01-01' };
     (findCommentByIdeaId as jest.Mock).mockReturnValue(comment);
-    (findMetadataByIdeaId as jest.Mock).mockReturnValue([]);
 
     const [req, ctx] = makeRequest('idea-1');
     const res = await GET(req, ctx);
     const body = await res.json();
     expect(body.title).toBe('Test Idea');
     expect(body.comment).toEqual(comment);
+  });
+
+  // ── Attachments (Phase 03) ────────────────────────────────────────────────
+
+  it('returns attachments:[] when idea has no attachments', async () => {
+    const [req, ctx] = makeRequest('idea-1');
+    const res = await GET(req, ctx);
+    const body = await res.json();
+    expect(body.attachments).toEqual([]);
+  });
+
+  it('returns populated attachments array', async () => {
+    (findAttachmentsByIdeaId as jest.Mock).mockReturnValue([mockAttachment]);
+    const [req, ctx] = makeRequest('idea-1');
+    const res = await GET(req, ctx);
+    const body = await res.json();
+    expect(body.attachments).toHaveLength(1);
+    expect(body.attachments[0].mime_type).toBe('application/pdf');
+  });
+
+  it('returns legacy-migrated attachment with size_bytes:0', async () => {
+    (findAttachmentsByIdeaId as jest.Mock).mockReturnValue([{ ...mockAttachment, size_bytes: 0 }]);
+    const [req, ctx] = makeRequest('idea-1');
+    const res = await GET(req, ctx);
+    const body = await res.json();
+    expect(body.attachments[0].size_bytes).toBe(0);
+  });
+
+  it('response does not include attachment_path field', async () => {
+    const [req, ctx] = makeRequest('idea-1');
+    const res = await GET(req, ctx);
+    const body = await res.json();
+    expect(body).not.toHaveProperty('attachment_path');
   });
 });
