@@ -38,31 +38,31 @@ describe('AttachmentPreview — readonly mode', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('renders a download link for a PDF attachment', () => {
+  it('renders an Open button for a PDF attachment', () => {
     render(<AttachmentPreview mode="readonly" attachments={[pdfAttachment]} />);
-    const link = screen.getByRole('link', { name: /brief\.pdf/i });
-    expect(link).toBeInTheDocument();
-    expect(link).toHaveAttribute('download');
+    expect(screen.getByText('brief.pdf')).toBeInTheDocument();
+    const btn = screen.getByRole('button', { name: /open/i });
+    expect(btn).toBeInTheDocument();
   });
 
-  it('renders an image thumbnail wrapped in a link to the full image for PNG', () => {
+  it('renders an image thumbnail for PNG', () => {
     render(<AttachmentPreview mode="readonly" attachments={[imageAttachment]} />);
     const img = screen.getByRole('img', { name: /mockup\.png/i });
     expect(img).toBeInTheDocument();
-    const link = img.closest('a');
-    expect(link).toHaveAttribute('target', '_blank');
   });
 
-  it('renders an inline video player for an MP4 attachment', () => {
+  it('renders an Open button for an MP4 attachment', () => {
     render(<AttachmentPreview mode="readonly" attachments={[videoAttachment]} />);
-    const video = document.querySelector('video');
-    expect(video).toBeTruthy();
-    expect(video).toHaveAttribute('controls');
+    expect(screen.getByText('demo.mp4')).toBeInTheDocument();
+    const btn = screen.getByRole('button', { name: /open/i });
+    expect(btn).toBeInTheDocument();
   });
 
   it('does not render Remove buttons in readonly mode', () => {
     render(<AttachmentPreview mode="readonly" attachments={[pdfAttachment, imageAttachment]} />);
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    // Only "Open" buttons should exist, no "Remove" buttons
+    const buttons = screen.getAllByRole('button');
+    buttons.forEach((btn) => expect(btn).not.toHaveAccessibleName(/remove/i));
   });
 
   it('renders all attachments when multiple are provided', () => {
@@ -74,7 +74,7 @@ describe('AttachmentPreview — readonly mode', () => {
     );
     expect(screen.getByText('brief.pdf')).toBeInTheDocument();
     expect(screen.getByText('mockup.png')).toBeInTheDocument();
-    expect(document.querySelector('video')).toBeTruthy();
+    expect(screen.getByText('demo.mp4')).toBeInTheDocument();
   });
 });
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getSessionUser } from '@/lib/auth/session';
 import { findIdeaById, updateIdeaStatus, type IdeaStatus } from '@/lib/db/dao/ideas';
 import { createComment } from '@/lib/db/dao/comments';
@@ -50,10 +51,16 @@ export async function PATCH(
   if ((newStatus === 'accepted' || newStatus === 'rejected') && body.comment?.trim()) {
     try {
       createComment(id, user.id, body.comment.trim());
-    } catch {
+    } catch (err) {
+      console.error('[evaluate] createComment failed:', err);
       // UNIQUE constraint: comment already exists — silently skip
     }
   }
+
+  // Revalidate both the admin and user-facing detail pages so the
+  // Next.js router cache is cleared and router.replace() gets fresh data.
+  revalidatePath(`/admin/ideas/${id}`);
+  revalidatePath(`/ideas/${id}`);
 
   return NextResponse.json({ ok: true });
 }

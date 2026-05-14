@@ -1,5 +1,6 @@
 import { StatusBadge } from './StatusBadge';
 import { CategoryDetails } from './CategoryDetails';
+import { AttachmentPreview } from './AttachmentPreview';
 import { formatDate } from '@/lib/utils/format-date';
 import type { Idea } from '@/lib/db/dao/ideas';
 import type { EvaluationComment } from '@/lib/db/dao/comments';
@@ -59,20 +60,7 @@ export function IdeaDetail({ idea, comment, metadata = [], attachments = [] }: I
           <h2 className="mb-2 text-sm font-semibold text-neutral-700 uppercase tracking-wide">
             Attachments
           </h2>
-          <ul className="space-y-1">
-            {attachments.map((att) => (
-              <li key={att.id}>
-                <a
-                  href={att.stored_path.replace('/uploads/', '/api/uploads/')}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-medium text-blue-600 hover:underline"
-                >
-                  {att.original_name}
-                </a>
-              </li>
-            ))}
-          </ul>
+          <AttachmentPreview mode="readonly" attachments={attachments} />
         </section>
       )}
 

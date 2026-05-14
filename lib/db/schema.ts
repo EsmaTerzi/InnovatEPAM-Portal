@@ -71,7 +71,13 @@ export function runMigrations(dbOverride?: Database.Database): void {
   if (hasLegacyCol || hasLegacyTable) {
     // Disable FK enforcement for the entire migration to avoid cascade issues
     // during table rename/rebuild.
+    // legacy_alter_table = ON prevents SQLite 3.26.0+ from auto-updating FK
+    // references in other tables when we rename ideas → ideas_legacy.
+    // Without this, idea_metadata and attachments would get their FKs rewritten
+    // to reference ideas_legacy, and after DROP TABLE ideas_legacy those FKs
+    // would be broken.
     db.pragma('foreign_keys = OFF');
+    db.pragma('legacy_alter_table = ON');
 
     // Step 1: Rename old ideas table to backup so we can read attachment_path later.
     // Skip if ideas_legacy already exists from a prior interrupted migration.
@@ -138,6 +144,29 @@ export function runMigrations(dbOverride?: Database.Database): void {
       db.prepare('DROP TABLE ideas_legacy').run();
     }
 
+    db.pragma('legacy_alter_table = OFF');
+    db.pragma('foreign_keys = ON');
+  }
+
+  // Recovery: SQLite 3.26.0+ may have auto-rewritten FK references in
+  // evaluation_comments when ideas was renamed to ideas_legacy. Detect and fix.
+  const ecSchema = (db.prepare(
+    "SELECT sql FROM sqlite_master WHERE type='table' AND name='evaluation_comments'"
+  ).get() as { sql: string } | undefined)?.sql ?? '';
+  if (ecSchema.includes('ideas_legacy')) {
+    db.pragma('foreign_keys = OFF');
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS evaluation_comments_fixed (
+        id           TEXT PRIMARY KEY,
+        idea_id      TEXT UNIQUE NOT NULL REFERENCES ideas(id),
+        admin_id     TEXT NOT NULL REFERENCES users(id),
+        comment_text TEXT NOT NULL,
+        created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      INSERT OR IGNORE INTO evaluation_comments_fixed SELECT * FROM evaluation_comments;
+      DROP TABLE evaluation_comments;
+      ALTER TABLE evaluation_comments_fixed RENAME TO evaluation_comments;
+    `);
     db.pragma('foreign_keys = ON');
   }
 }

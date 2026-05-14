@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { StatusBadge } from '@/components/ideas/StatusBadge';
@@ -14,6 +14,7 @@ interface EvaluatePanelProps {
 
 export function EvaluatePanel({ ideaId, currentStatus }: EvaluatePanelProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +35,8 @@ export function EvaluatePanel({ ideaId, currentStatus }: EvaluatePanelProps) {
       if (res.ok) {
         setSuccess(`Status updated to "${newStatus.replace('_', ' ')}".`);
         setComment('');
-        router.refresh();
+        // router.replace forces a full RSC re-fetch (avoids stale router cache)
+        router.replace(pathname);
       } else {
         const data = await res.json();
         setError(data.error ?? 'Action failed. Please try again.');
