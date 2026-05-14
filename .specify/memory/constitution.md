@@ -1,3 +1,27 @@
+<!--
+SYNC IMPACT REPORT
+==================
+Version change: 1.2.0 → 1.3.0 (MINOR — new principle added, new workflow rule added)
+
+Modified principles:
+  - None renamed or redefined
+
+Added:
+  - Principle VI: Data-Driven Configuration (NON-NEGOTIABLE from Phase 02)
+  - Development Workflow rule: Phase 02 backward-compatibility with Phase 01 Auth/Roles
+
+Removed:
+  - None
+
+Templates reviewed:
+  - .specify/templates/plan-template.md     ✅ No update required (Constitution Check section is principle-agnostic)
+  - .specify/templates/spec-template.md     ✅ No update required
+  - .specify/templates/tasks-template.md    ✅ No update required
+
+Follow-up TODOs:
+  - None; all placeholders resolved
+-->
+
 # InnovatEPAM Portal Constitution
 
 ## Core Principles
@@ -17,6 +41,9 @@ TDD is the target practice for this project and will be enforced from Phase 2 on
 ### V. Data Persistence with SQLite
 SQLite is the sole data persistence layer — no external databases, ORMs, or cloud storage for structured data; Database access is encapsulated in dedicated data-access modules — no raw SQL in components or API handlers; Schema migrations are versioned and applied programmatically on startup; `better-sqlite3` is the approved SQLite driver (synchronous, server-side only); All queries must use parameterised statements — no string interpolation in SQL.
 
+### VI. Data-Driven Configuration (NON-NEGOTIABLE from Phase 02)
+All dynamic UI behaviour — including form field sets, validation rules, guidance text, and conditional rendering — MUST be driven by a single, centralised configuration object; No component-level hard-coding of category names, field lists, or validation rules; The configuration object is the sole authoritative source of truth for all category-specific form behaviour; Adding or modifying a category MUST require only a change to the configuration object — zero component changes are permitted; Configuration objects live in `lib/config/` and are typed with explicit TypeScript interfaces — no implicit `any` shapes; Feature phases that introduce new dynamic behaviours MUST extend the existing configuration shape rather than create parallel ad-hoc structures.
+
 ## Technology Stack
 
 | Layer | Technology | Constraints |
@@ -28,17 +55,19 @@ SQLite is the sole data persistence layer — no external databases, ORMs, or cl
 | Database | SQLite via `better-sqlite3` | Server-side only |
 | Testing | Jest + React Testing Library | Mandatory from Phase 2; exempt in Phase 1 MVP |
 | Language | TypeScript | Strict mode enabled; no `any` |
+| Dynamic Form Config | `lib/config/categories.ts` | Single source of truth for all category-specific field definitions |
 
 ## Development Workflow
 
 - Every feature branch starts with a failing test from Phase 2 onward; Phase 1 MVP is exempt from this gate
-- Code reviews must verify compliance with all five Core Principles before approval
+- Code reviews must verify compliance with all six Core Principles before approval
 - `next/font`, `next/image`, and `next/link` are used wherever applicable — never raw `<img>`, `<a>`, or font imports
 - Environment variables are validated at startup — no silent failures from missing config
 - SQLite database file is excluded from version control; schema and seed scripts are committed
+- Phase 02 features MUST build on the Phase 01 authentication and role system without modifying it; every new API route MUST enforce the same `requireAuth` / `requireAdmin` guard pattern established in Phase 01; no parallel auth flows are permitted
 
 ## Governance
 
 This constitution supersedes all other practices, conventions, and personal preferences; Amendments require explicit ratification and must be reflected in this document; All contributors are bound by this constitution from day one; Complexity must be justified against these principles — if it cannot be, simplify.
 
-**Version**: 1.2.0 | **Ratified**: 2026-05-13 | **Last Amended**: 2026-05-13
+**Version**: 1.3.0 | **Ratified**: 2026-05-13 | **Last Amended**: 2026-05-14

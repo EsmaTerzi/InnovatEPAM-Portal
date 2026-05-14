@@ -1,14 +1,17 @@
 import { StatusBadge } from './StatusBadge';
+import { CategoryDetails } from './CategoryDetails';
 import { formatDate } from '@/lib/utils/format-date';
 import type { Idea } from '@/lib/db/dao/ideas';
 import type { EvaluationComment } from '@/lib/db/dao/comments';
+import type { MetadataEntry } from '@/lib/db/dao/metadata';
 
 interface IdeaDetailProps {
   idea: Idea;
   comment: EvaluationComment | null;
+  metadata?: MetadataEntry[];
 }
 
-export function IdeaDetail({ idea, comment }: IdeaDetailProps) {
+export function IdeaDetail({ idea, comment, metadata = [] }: IdeaDetailProps) {
   return (
     <article className="space-y-6">
       {/* Header */}
@@ -42,6 +45,11 @@ export function IdeaDetail({ idea, comment }: IdeaDetailProps) {
           {idea.description}
         </p>
       </section>
+
+      {/* Category Details */}
+      {metadata.length > 0 && (
+        <CategoryDetails category={idea.category} metadata={metadata} />
+      )}
 
       {/* Attachment */}
       {idea.attachment_path && (

@@ -1,7 +1,8 @@
-import { runMigrations } from './lib/db/schema';
-import { seedAdmin } from './lib/db/seed';
-
 export async function register() {
-  runMigrations();
-  await seedAdmin();
+  if (process.env.NEXT_RUNTIME === 'nodejs') {
+    const { runMigrations } = await import('./lib/db/schema');
+    const { seedAdmin } = await import('./lib/db/seed');
+    runMigrations();
+    await seedAdmin();
+  }
 }

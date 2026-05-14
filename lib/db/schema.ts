@@ -38,5 +38,13 @@ export function runMigrations(): void {
       user_id    TEXT NOT NULL REFERENCES users(id),
       expires_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS idea_metadata (
+      id        TEXT PRIMARY KEY,
+      idea_id   TEXT NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
+      field_key TEXT NOT NULL,
+      field_val TEXT NOT NULL,
+      UNIQUE (idea_id, field_key)
+    );
   `);
 }

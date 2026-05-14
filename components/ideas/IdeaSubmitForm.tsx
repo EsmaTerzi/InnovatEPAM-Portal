@@ -12,15 +12,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { CATEGORY_CONFIG } from '@/lib/config/categories';
+import { validateCategoryFields } from '@/lib/utils/validation';
+import { CategoryFieldsRenderer } from './CategoryFieldsRenderer';
+import { GuidanceBanner } from './GuidanceBanner';
 
-const CATEGORIES = [
-  'Process Improvement',
-  'Technology',
-  'Customer Experience',
-  'Other',
-] as const;
+const CATEGORIES = Object.keys(CATEGORY_CONFIG) as string[];
 
-type FormErrors = {
+type BaseErrors = {
   title?: string;
   description?: string;
   category?: string;
@@ -30,37 +29,98 @@ type FormErrors = {
 
 export function IdeaSubmitForm() {
   const router = useRouter();
+
+  // ── Base fields ────────────────────────────────────────────────────────────
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [file, setFile] = useState<File | null>(null);
-  const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
 
-  function validate(): boolean {
-    const next: FormErrors = {};
+  // ── Category-specific metadata fields ──────────────────────────────────────
+  const [metadataFields, setMetadataFields] = useState<Record<string, string>>({});
+
+  // ── Guidance banner dismissal (session-scoped) ─────────────────────────────
+  const [dismissedCategories, setDismissedCategories] = useState<Set<string>>(new Set());
+
+  // ── Category-switch warning ────────────────────────────────────────────────
+  const [pendingCategory, setPendingCategory] = useState<string | null>(null);
+
+  // ── Errors ─────────────────────────────────────────────────────────────────
+  const [baseErrors, setBaseErrors] = useState<BaseErrors>({});
+  const [metaErrors, setMetaErrors] = useState<Record<string, string>>({});
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function handleCategoryChange(newCategory: string) {
+    const hasMetadataValues = Object.values(metadataFields).some((v) => v.trim() !== '');
+    if (hasMetadataValues) {
+      setPendingCategory(newCategory);
+    } else {
+      applyCategory(newCategory);
+    }
+  }
+
+  function applyCategory(newCategory: string) {
+    setCategory(newCategory);
+    setMetadataFields({});
+    setMetaErrors({});
+    setPendingCategory(null);
+  }
+
+  function handleMetadataChange(key: string, value: string) {
+    setMetadataFields((prev) => ({ ...prev, [key]: value }));
+    if (metaErrors[key]) {
+      setMetaErrors((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+    }
+  }
+
+  function validateBase(): boolean {
+    const next: BaseErrors = {};
     if (!title.trim()) next.title = 'Title is required';
     if (!description.trim()) next.description = 'Description is required';
     if (!category) next.category = 'Please select a category';
-    if (file && file.size > 10 * 1024 * 1024) {
-      next.attachment = 'File must be under 10 MB';
-    }
-    setErrors(next);
+    if (file && file.size > 10 * 1024 * 1024) next.attachment = 'File must be under 10 MB';
+    setBaseErrors(next);
     return Object.keys(next).length === 0;
+  }
+
+  function scrollToFirstError() {
+    setTimeout(() => {
+      const el = document.querySelector<HTMLElement>('[data-error="true"], [aria-invalid="true"]');
+      if (el && typeof el.scrollIntoView === 'function') {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 50);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!validate()) return;
+
+    const baseOk = validateBase();
+    const categoryErrors = validateCategoryFields(category, metadataFields);
+    setMetaErrors(categoryErrors);
+
+    if (!baseOk || Object.keys(categoryErrors).length > 0) {
+      scrollToFirstError();
+      return;
+    }
 
     setLoading(true);
-    setErrors({});
+    setBaseErrors({});
+    setMetaErrors({});
 
     const formData = new FormData();
     formData.append('title', title.trim());
     formData.append('description', description.trim());
     formData.append('category', category);
     if (file) formData.append('attachment', file);
+    if (Object.keys(metadataFields).length > 0) {
+      formData.append('metadata', JSON.stringify(metadataFields));
+    }
 
     try {
       const res = await fetch('/api/ideas', { method: 'POST', body: formData });
@@ -73,16 +133,22 @@ export function IdeaSubmitForm() {
 
       const data = await res.json();
       if (data.errors) {
-        setErrors(data.errors);
+        const { title: t, description: d, category: c, attachment: a, server: s, ...rest } =
+          data.errors as Record<string, string>;
+        setBaseErrors({ title: t, description: d, category: c, attachment: a, server: s });
+        setMetaErrors(rest);
+        scrollToFirstError();
       } else {
-        setErrors({ server: data.error ?? 'Submission failed. Please try again.' });
+        setBaseErrors({ server: data.error ?? 'Submission failed. Please try again.' });
       }
     } catch {
-      setErrors({ server: 'Network error. Please try again.' });
+      setBaseErrors({ server: 'Network error. Please try again.' });
     } finally {
       setLoading(false);
     }
   }
+
+  const showGuidance = !!category && !dismissedCategories.has(category);
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-5">
@@ -95,14 +161,15 @@ export function IdeaSubmitForm() {
           id="title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          aria-invalid={!!errors.title}
-          aria-describedby={errors.title ? 'title-error' : undefined}
+          aria-invalid={!!baseErrors.title}
+          aria-describedby={baseErrors.title ? 'title-error' : undefined}
           disabled={loading}
           maxLength={200}
+          data-error={baseErrors.title ? 'true' : undefined}
         />
-        {errors.title && (
+        {baseErrors.title && (
           <p id="title-error" className="text-sm text-red-600" role="alert">
-            {errors.title}
+            {baseErrors.title}
           </p>
         )}
       </div>
@@ -117,13 +184,14 @@ export function IdeaSubmitForm() {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={5}
-          aria-invalid={!!errors.description}
-          aria-describedby={errors.description ? 'description-error' : undefined}
+          aria-invalid={!!baseErrors.description}
+          aria-describedby={baseErrors.description ? 'description-error' : undefined}
           disabled={loading}
+          data-error={baseErrors.description ? 'true' : undefined}
         />
-        {errors.description && (
+        {baseErrors.description && (
           <p id="description-error" className="text-sm text-red-600" role="alert">
-            {errors.description}
+            {baseErrors.description}
           </p>
         )}
       </div>
@@ -133,11 +201,11 @@ export function IdeaSubmitForm() {
         <label htmlFor="category" className="block text-sm font-medium text-neutral-700">
           Category <span className="text-red-500">*</span>
         </label>
-        <Select value={category} onValueChange={setCategory} disabled={loading}>
+        <Select value={category} onValueChange={handleCategoryChange} disabled={loading}>
           <SelectTrigger
             id="category"
-            aria-invalid={!!errors.category}
-            aria-describedby={errors.category ? 'category-error' : undefined}
+            aria-invalid={!!baseErrors.category}
+            aria-describedby={baseErrors.category ? 'category-error' : undefined}
           >
             <SelectValue placeholder="Select a category" />
           </SelectTrigger>
@@ -149,12 +217,64 @@ export function IdeaSubmitForm() {
             ))}
           </SelectContent>
         </Select>
-        {errors.category && (
+        {baseErrors.category && (
           <p id="category-error" className="text-sm text-red-600" role="alert">
-            {errors.category}
+            {baseErrors.category}
           </p>
         )}
       </div>
+
+      {/* Category-switch warning */}
+      {pendingCategory && (
+        <div
+          role="alert"
+          className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 space-y-2"
+        >
+          <p>
+            Switching to <strong>{pendingCategory}</strong> will clear your current
+            category-specific answers. Continue?
+          </p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => applyCategory(pendingCategory)}
+            >
+              Continue
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => setPendingCategory(null)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Guidance banner */}
+      {showGuidance && (
+        <GuidanceBanner
+          guidance={CATEGORY_CONFIG[category].guidance}
+          onDismiss={() =>
+            setDismissedCategories((prev) => new Set([...prev, category]))
+          }
+        />
+      )}
+
+      {/* Category-specific fields */}
+      {category && !pendingCategory && (
+        <CategoryFieldsRenderer
+          category={category}
+          values={metadataFields}
+          errors={metaErrors}
+          onChange={handleMetadataChange}
+          disabled={loading}
+        />
+      )}
 
       {/* Attachment */}
       <div className="space-y-1">
@@ -172,16 +292,22 @@ export function IdeaSubmitForm() {
         <p id="attachment-hint" className="text-xs text-neutral-400">
           PDF, DOCX, PPTX, PNG or JPEG · Max 10 MB
         </p>
-        {errors.attachment && (
+        {baseErrors.attachment && (
           <p className="text-sm text-red-600" role="alert">
-            {errors.attachment}
+            {baseErrors.attachment}
           </p>
         )}
       </div>
 
-      {errors.server && (
+      {baseErrors.server && (
         <p className="text-sm text-red-600" role="alert">
-          {errors.server}
+          {baseErrors.server}
+        </p>
+      )}
+
+      {!category && (
+        <p className="text-sm text-neutral-400">
+          Select a category above to see additional fields specific to your idea type.
         </p>
       )}
 
